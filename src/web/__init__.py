@@ -1,0 +1,1 @@
+"""Couche web : contrôleurs, sérialisation et documentation de l'API."""
