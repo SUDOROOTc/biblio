@@ -8,7 +8,7 @@ Ce fichier s'adresse à tout assistant IA qui travaille sur ce dépôt. **Lis-le
 - Ce qui compte : **la façon de construire** (modélisation, tests, lisibilité, décisions assumées) plus que la quantité de fonctionnalités.
 - Périmètre : les fonctionnalités « Essentielles » et « Importantes » du cahier des charges, propres et testées. Les fonctionnalités « Bonus » sont hors périmètre sauf demande explicite ; la documentation Swagger/OpenAPI fait exception : elle est demandée dès le début (voir section 6).
 - L'auteur doit pouvoir **expliquer et défendre chaque ligne** du code.
-- Références : `docs/enonce.docx` (cahier des charges), `docs/diagramme_classes.svg` et `docs/diagramme_classes.md` (conception). **Le diagramme fait foi.** Ne t'en écarte pas sans le dire et sans proposer sa mise à jour.
+- Références : `docs/enonce.md` (cahier des charges), `docs/diagramme_classes.svg` et `docs/diagramme_classes.md` (conception). **Le diagramme fait foi.** Ne t'en écarte pas sans le dire et sans proposer sa mise à jour.
 
 ## 2. Façon de travailler avec l'auteur (mode apprentissage)
 
@@ -142,6 +142,23 @@ Les docstrings expliquent **ce que fait** le code, **pourquoi**, et **ce qui peu
 - **Jamais** de commit fourre-tout, de message `wip` / `fix` / `test`, ni de code non testé.
 - Ne réécris pas l'historique publié. Ne modifie pas une migration déjà commitée : crées-en une nouvelle.
 - L'historique doit se lire comme le récit du développement : chaque commit raconte une étape.
+
+### Nommage des branches
+
+Les branches suivent le même découpage que les Conventional Commits : `<scope>/<description-en-kebab-case>`.
+
+| Scope | Exemples de branches |
+|---|---|
+| `domaine` | `domaine/statut-et-erreurs`, `domaine/entite-livre` |
+| `application` | `application/horloge-et-depots`, `application/service-reservation` |
+| `infrastructure` | `infrastructure/modeles-et-migrations`, `infrastructure/depots-django` |
+| `web` | `web/endpoints-livres`, `web/traduction-erreurs` |
+| `chore` | `chore/configuration-docker` |
+| `docs` | `docs/readme` |
+
+- Une branche = un cycle de développement.
+- On merge sur `main` uniquement quand tous les tests sont verts et la définition de « terminé » (section 12) est satisfaite.
+- On ne travaille jamais directement sur `main`.
 
 ## 10. Décisions ouvertes : à ne pas trancher seul
 

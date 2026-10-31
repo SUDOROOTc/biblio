@@ -21,3 +21,7 @@ htmlcov/
 .vscode/
 .idea/
 .DS_Store
+
+# Suivi local
+docs/ETAT_PROJET.md
+docs/PLAN.md
