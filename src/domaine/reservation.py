@@ -9,6 +9,7 @@ Les réservations référencent le livre et le lecteur par identifiant
 service, pas par cette entité.
 """
 
+import uuid
 from datetime import datetime
 
 from src.domaine.erreurs import ErreurTransitionInvalide
@@ -30,9 +31,9 @@ class Reservation:
 
     def __init__(
         self,
-        id: int,
-        livre_id: int,
-        lecteur_id: int,
+        id: uuid.UUID,
+        livre_id: uuid.UUID,
+        lecteur_id: uuid.UUID,
         statut: StatutReservation,
         date_reservation: datetime,
         date_emprunt: datetime | None = None,

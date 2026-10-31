@@ -8,6 +8,8 @@ Les services ne connaissent que ces interfaces et échangent des entités
 pures du domaine, jamais des modèles Django.
 """
 
+import uuid
+from datetime import datetime
 from typing import Protocol
 
 
@@ -25,7 +27,7 @@ class DepotReservation(Protocol):
             reservation: La réservation à enregistrer.
         """
 
-    def trouver_par_id(self, id: int) -> "Reservation | None":
+    def trouver_par_id(self, id: uuid.UUID) -> "Reservation | None":
         """Retourne la réservation avec cet identifiant.
 
         Args:
@@ -42,7 +44,9 @@ class DepotReservation(Protocol):
             La liste des réservations.
         """
 
-    def lister_actives_du_lecteur(self, lecteur_id: int) -> list["Reservation"]:
+    def lister_actives_du_lecteur(
+        self, lecteur_id: uuid.UUID
+    ) -> list["Reservation"]:
         """Retourne les réservations actives d'un lecteur.
 
         Args:
@@ -52,7 +56,7 @@ class DepotReservation(Protocol):
             La liste des réservations actives de ce lecteur.
         """
 
-    def existe_active_pour_livre(self, livre_id: int) -> bool:
+    def existe_active_pour_livre(self, livre_id: uuid.UUID) -> bool:
         """Indique si un livre a une réservation active.
 
         Args:
@@ -62,11 +66,11 @@ class DepotReservation(Protocol):
             True si une réservation active existe pour ce livre, False sinon.
         """
 
-    def trouver_a_expirer(self, limite: int) -> list["Reservation"]:
+    def trouver_a_expirer(self, limite: datetime) -> list["Reservation"]:
         """Retourne les réservations qui doivent expirer avant la limite.
 
         Args:
-            limite: Tonne de la limite d'expiration.
+            limite: Date et heure à partir de laquelle la réservation expire.
 
         Returns:
             La liste des réservations à expirer.
@@ -79,7 +83,7 @@ class DepotLivre(Protocol):
     def enregistrer(self, livre: "Livre") -> None:
         """Enregistre un livre."""
 
-    def trouver_par_id(self, id: int) -> "Livre | None":
+    def trouver_par_id(self, id: uuid.UUID) -> "Livre | None":
         """Retourne le livre avec cet identifiant."""
 
     def rechercher(self, texte: str) -> list["Livre"]:
@@ -92,7 +96,7 @@ class DepotLecteur(Protocol):
     def enregistrer(self, lecteur: "Lecteur") -> None:
         """Enregistre un lecteur."""
 
-    def trouver_par_id(self, id: int) -> "Lecteur | None":
+    def trouver_par_id(self, id: uuid.UUID) -> "Lecteur | None":
         """Retourne le lecteur avec cet identifiant."""
 
     def lister(self) -> list["Lecteur"]:
