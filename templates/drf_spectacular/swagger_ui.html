@@ -1,0 +1,53 @@
+{% extends "drf_spectacular/swagger_ui.html" %}
+{% load static %}
+
+{% block head %}
+{{ block.super }}
+<style>
+  #theme-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 9999;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  body.swagger-dark {
+    background: #1e1e1e;
+  }
+  body.swagger-dark .swagger-ui {
+    filter: invert(0.9) hue-rotate(180deg);
+  }
+  body.swagger-dark .swagger-ui img,
+  body.swagger-dark .swagger-ui svg {
+    filter: invert(1) hue-rotate(180deg);
+  }
+</style>
+<script>
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.body.classList.add('swagger-dark');
+      document.getElementById('theme-toggle').textContent = '☀️ Clair';
+    } else {
+      document.body.classList.remove('swagger-dark');
+      document.getElementById('theme-toggle').textContent = '🌙 Sombre';
+    }
+    localStorage.setItem('swagger-theme', theme);
+  }
+  window.addEventListener('load', function() {
+    const btn = document.createElement('button');
+    btn.id = 'theme-toggle';
+    document.body.appendChild(btn);
+    const saved = localStorage.getItem('swagger-theme') || 'light';
+    applyTheme(saved);
+    btn.addEventListener('click', function() {
+      const current = document.body.classList.contains('swagger-dark') ? 'dark' : 'light';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
+  });
+</script>
+{% endblock %}
