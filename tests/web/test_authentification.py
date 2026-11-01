@@ -43,3 +43,20 @@ def test_login_valide_retourne_l_utilisateur_et_cree_une_session():
         }
     }
     assert "_auth_user_id" in client.session
+
+
+@pytest.mark.django_db
+def test_me_retourne_l_utilisateur_connecte():
+    User.objects.create_user(
+        username="bibliothecaire",
+        password="bibliothecaire",
+        email="bibliothecaire@biblio.local",
+        is_staff=True,
+    )
+    client = APIClient()
+    client.login(username="bibliothecaire", password="bibliothecaire")
+
+    reponse = client.get("/api/auth/me")
+
+    assert reponse.status_code == 200
+    assert reponse.json()["utilisateur"]["username"] == "bibliothecaire"

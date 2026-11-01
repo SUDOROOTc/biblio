@@ -69,3 +69,22 @@ class ConnexionView(APIView):
 
         login(request, utilisateur)
         return Response({"utilisateur": _utilisateur_vers_dict(utilisateur)})
+
+
+class UtilisateurConnecteView(APIView):
+    """Retourne l'utilisateur associé à la session Django courante."""
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        description="Retourne le profil du bibliothécaire connecté.",
+        responses={200: None, 401: None},
+    )
+    def get(self, request):
+        """Retourne le profil connecté ou une erreur JSON d'authentification."""
+        if not request.user.is_authenticated:
+            return Response(
+                {"detail": "Authentification requise."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        return Response({"utilisateur": _utilisateur_vers_dict(request.user)})
