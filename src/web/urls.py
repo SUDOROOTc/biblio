@@ -15,5 +15,5 @@ urlpatterns = [
     path("reservations", views.ReservationListCreateView.as_view()),
     path("reservations/<uuid:reservation_id>/annuler", views.ReservationAnnulerView.as_view()),
     path("reservations/<uuid:reservation_id>/emprunter", views.ReservationEmprunterView.as_view()),
-    path("reservations/<uuid:reservation_id>/retourner", views.ReservationEmprunterView.as_view()),
+    path("reservations/<uuid:reservation_id>/retourner", views.ReservationRetournerView.as_view()),
 ]

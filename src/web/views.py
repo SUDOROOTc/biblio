@@ -234,7 +234,15 @@ class ReservationEmprunterView(APIView):
             return traduire_erreur_domaine(exc)
 
 
-ReservationRetournerView = ReservationEmprunterView
+class ReservationRetournerView(APIView):
+    @extend_schema(request=None, responses={200: None})
+    def post(self, request, reservation_id):
+        service = get_service_reservation()
+        try:
+            service.enregistrer_retour(reservation_id)
+            return Response(status=status.HTTP_200_OK)
+        except ErreurDomaine as exc:
+            return traduire_erreur_domaine(exc)
 
 
 class ChangerMotDePasseView(APIView):
