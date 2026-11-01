@@ -70,20 +70,25 @@ class DepotLivreDjango(DepotLivre):
             return None
         return _livre_vers_entite(livre_model)
 
-    def rechercher(self, texte: str) -> list[Livre]:
-        texte_normalise = texte.lower()
-        livres = LivreModel.objects.filter(
-            models.Q(titre__icontains=texte) | models.Q(auteur__icontains=texte)
-        )
-        # Simple filter to match case-insensitive behavior
-        resultats = []
-        for livre_model in livres:
-            if (
-                texte_normalise in livre_model.titre.lower()
-                or texte_normalise in livre_model.auteur.lower()
-            ):
-                resultats.append(_livre_vers_entite(livre_model))
-        return resultats
+    def rechercher(self, texte: str, annee_publication: int | None = None) -> list[Livre]:
+        """Recherche les livres par titre ou auteur, sans tenir compte de la casse.
+
+        Args:
+            texte: Texte à rechercher dans le titre ou l'auteur.
+            annee_publication: Année de publication optionnelle pour filtrer.
+
+        Returns:
+            Les livres dont le titre ou l'auteur correspond au texte,
+            et optionnellement à l'année de publication.
+        """
+        livres = LivreModel.objects.all()
+        if texte:
+            livres = livres.filter(
+                models.Q(titre__icontains=texte) | models.Q(auteur__icontains=texte)
+            )
+        if annee_publication is not None:
+            livres = livres.filter(annee_publication=annee_publication)
+        return [_livre_vers_entite(livre) for livre in livres]
 
 
 class DepotLecteurDjango(DepotLecteur):

@@ -49,22 +49,29 @@ class DepotLivreMemoire(DepotLivre):
         """
         return self._livres.get(id)
 
-    def rechercher(self, texte: str) -> list[Livre]:
+    def rechercher(self, texte: str, annee_publication: int | None = None) -> list[Livre]:
         """Recherche les livres par titre ou auteur, sans tenir compte de la casse.
 
         Args:
             texte: Texte à rechercher dans le titre ou l'auteur.
+            annee_publication: Année de publication optionnelle pour filtrer.
 
         Returns:
-            Les livres dont le titre ou l'auteur correspond au texte.
+            Les livres dont le titre ou l'auteur correspond au texte,
+            et optionnellement à l'année de publication.
         """
         texte_normalise = texte.casefold()
-        return [
+        resultats = [
             livre
             for livre in self._livres.values()
             if texte_normalise in livre.titre.casefold()
             or texte_normalise in livre.auteur.casefold()
         ]
+        if annee_publication is not None:
+            resultats = [
+                livre for livre in resultats if livre.annee_publication == annee_publication
+            ]
+        return resultats
 
 
 class DepotLecteurMemoire(DepotLecteur):

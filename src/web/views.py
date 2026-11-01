@@ -1,5 +1,6 @@
 """Vues de l'API Biblio."""
 
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
@@ -97,9 +98,32 @@ class LivreRechercheView(APIView):
     @extend_schema(responses={200: None})
     def get(self, request):
         texte = request.query_params.get("q", "")
+        annee_publication = request.query_params.get("annee_publication")
+        if annee_publication is not None:
+            try:
+                annee_publication = int(annee_publication)
+            except (TypeError, ValueError):
+                annee_publication = None
+        page = request.query_params.get("page", 1)
+        page_size = request.query_params.get("page_size", 10)
+
         service = get_service_livre()
-        livres = service.rechercher(texte)
-        return Response([_livre_vers_dict(l) for l in livres])
+        livres = service.rechercher(texte, annee_publication)
+
+        paginator = Paginator(livres, page_size)
+        try:
+            page_obj = paginator.page(page)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+
+        return Response({
+            "count": paginator.count,
+            "next": page_obj.next_page_number() if page_obj.has_next() else None,
+            "previous": page_obj.previous_page_number() if page_obj.has_previous() else None,
+            "results": [_livre_vers_dict(l) for l in page_obj.object_list],
+        })
 
 
 class LecteurListCreateView(APIView):
