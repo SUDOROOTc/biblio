@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "drf_spectacular_sidecar",
     "src.infrastructure",
     "src.authentification",
+    "src.seeders",
 ]
 
 MIDDLEWARE = [
