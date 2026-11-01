@@ -100,6 +100,20 @@ Identifiants par défaut : `bibliothecaire` / `bibliothecaire`. Il est possible 
 
 Le mot de passe peut être modifié depuis l'interface Django Admin (`/admin/`) ou via `python manage.py changepassword bibliothecaire`. Routes d'authentification DRF disponibles sous `/api/auth/`.
 
+Pour le frontend React, récupérer d'abord le cookie CSRF avec `GET /api/auth/csrf`, puis envoyer sa valeur dans `X-CSRFToken` lors du login JSON :
+
+```json
+{
+  "username": "bibliothecaire",
+  "password": "bibliothecaire"
+}
+```
+
+Le login se fait sur `POST /api/auth/login`. La session Django est conservée
+dans le cookie de session. Les endpoints `GET /api/auth/me` et
+`POST /api/auth/logout` permettent respectivement de récupérer l'utilisateur
+connecté et de fermer la session.
+
 | Méthode | Endpoint | Description |
 | --- | --- | --- |
 | `POST` | `/api/livres` | Créer un livre |

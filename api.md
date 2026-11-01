@@ -9,14 +9,47 @@
 - Les identifiants sont des UUID.
 - Les dates sont des chaînes ISO 8601, par exemple `2026-11-01T10:00:00+00:00`.
 
-Le frontend peut utiliser l'authentification de session Django :
+Le frontend utilise l'authentification de session Django. Il doit d'abord
+obtenir le cookie CSRF, puis conserver les cookies et envoyer la valeur du
+cookie `csrftoken` dans l'en-tête `X-CSRFToken` pour les requêtes POST :
 
 ```http
-POST /api/auth/login/
-Content-Type: application/x-www-form-urlencoded
+GET /api/auth/csrf
 ```
 
-Champs : `username`, `password`. Pour les requêtes suivantes, conserver le cookie de session.
+Puis :
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+X-CSRFToken: <valeur-du-cookie-csrftoken>
+```
+
+```json
+{
+  "username": "bibliothecaire",
+  "password": "bibliothecaire"
+}
+```
+
+Réponse `200` :
+
+```json
+{
+  "utilisateur": {
+    "username": "bibliothecaire",
+    "email": "bibliothecaire@biblio.local",
+    "role": "bibliothecaire"
+  }
+}
+```
+
+Le frontend peut ensuite consulter l'utilisateur courant avec `GET /api/auth/me`
+et fermer la session avec `POST /api/auth/logout`, en envoyant également
+`X-CSRFToken`. Le logout retourne `204`.
+
+Les identifiants invalides retournent `401`, les données JSON invalides
+retournent `422` et une requête POST sans CSRF retourne `403`.
 
 ## Livres
 

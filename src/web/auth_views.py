@@ -94,6 +94,7 @@ class DeconnexionView(APIView):
     """Ferme la session Django de l'utilisateur authentifié."""
 
     @extend_schema(
+        request=None,
         description="Ferme la session Django courante.",
         responses={204: None, 401: None},
     )
