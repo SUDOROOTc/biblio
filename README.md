@@ -185,6 +185,17 @@ L'API écoute sur le port 8000.
 docker compose run --rm web pytest
 ```
 
+### Déploiement Render
+
+Le service web Render utilise la branche `chore/deploiement-render`. Configurer
+les variables d'environnement à partir de [.env.render.example](.env.render.example),
+sans versionner les valeurs secrètes. Pour le domaine de production actuel :
+
+```text
+DJANGO_ALLOWED_HOSTS=biblio-api-3fjk.onrender.com
+DJANGO_CSRF_TRUSTED_ORIGINS=https://biblio-api-3fjk.onrender.com
+```
+
 Tests rangés par couche : `tests/domaine/`, `tests/application/`, `tests/infrastructure/`, `tests/web/`, `tests/architecture/`. Le test d'architecture garantit la pureté des couches `domaine/` et `application/`. Le test de concurrence valide la correction du bug sur vraie base PostgreSQL.
 
 ## Décisions et compromis
