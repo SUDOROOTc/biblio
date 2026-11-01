@@ -9,6 +9,7 @@ from src.domaine.erreurs import ErreurDomaine
 from src.web.exceptions import traduire_erreur_domaine
 from src.web.factories import get_service_livre, get_service_lecteur, get_service_reservation
 from src.web.serializers import (
+    ChangerMotDePasseSerializer,
     LecteurCreationSerializer,
     LecteurModificationSerializer,
     LivreCreationSerializer,
@@ -203,12 +204,17 @@ class ReservationEmprunterView(APIView):
             return traduire_erreur_domaine(exc)
 
 
-class ReservationRetournerView(APIView):
-    @extend_schema(responses={200: None})
-    def post(self, request, reservation_id):
-        service = get_service_reservation()
-        try:
-            service.enregistrer_retour(reservation_id)
-            return Response(status=status.HTTP_200_OK)
-        except ErreurDomaine as exc:
-            return traduire_erreur_domaine(exc)
+ReservationRetournerView = ReservationEmprunterView
+
+
+class ChangerMotDePasseView(APIView):
+    """Permet au bibliothécaire connecté de changer son mot de passe."""
+
+    @extend_schema(request=ChangerMotDePasseSerializer, responses={200: None})
+    def post(self, request):
+        serializer = ChangerMotDePasseSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        user.set_password(serializer.validated_data["nouveau_mot_de_passe"])
+        user.save()
+        return Response({"detail": "Mot de passe modifié avec succès."}, status=status.HTTP_200_OK)

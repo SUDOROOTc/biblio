@@ -1,5 +1,6 @@
 """Sérialiseurs pour valider uniquement la forme des requêtes."""
 
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 
@@ -44,3 +45,21 @@ class ReservationActionSerializer(serializers.Serializer):
     """Sérialiseur vide utilisé pour les actions sur une réservation."""
 
     pass
+
+
+class ChangerMotDePasseSerializer(serializers.Serializer):
+    """Sérialiseur pour changer le mot de passe du bibliothécaire connecté."""
+
+    ancien_mot_de_passe = serializers.CharField(write_only=True)
+    nouveau_mot_de_passe = serializers.CharField(write_only=True)
+
+    def validate_ancien_mot_de_passe(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Ancien mot de passe incorrect.")
+        return value
+
+    def validate_nouveau_mot_de_passe(self, value):
+        user = self.context["request"].user
+        validate_password(value, user)
+        return value

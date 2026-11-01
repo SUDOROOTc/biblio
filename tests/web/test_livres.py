@@ -2,11 +2,14 @@
 
 import pytest
 from rest_framework.test import APIClient
+from django.contrib.auth.models import User
 
 
 @pytest.mark.django_db
 def test_creer_un_livre_retourne_201():
+    User.objects.create_user(username="bibliothecaire", password="test")
     client = APIClient()
+    client.login(username="bibliothecaire", password="test")
     response = client.post(
         "/api/livres",
         {"titre": "Dune", "auteur": "Frank Herbert", "annee_publication": 1965},
