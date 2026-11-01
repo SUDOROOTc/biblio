@@ -86,8 +86,16 @@ class DepotLivre(Protocol):
     def trouver_par_id(self, id: uuid.UUID) -> "Livre | None":
         """Retourne le livre avec cet identifiant."""
 
-    def rechercher(self, texte: str) -> list["Livre"]:
-        """Retourne les livres correspondant au texte de recherche."""
+    def rechercher(self, texte: str, annee_publication: int | None = None) -> list["Livre"]:
+        """Retourne les livres correspondant au texte de recherche.
+
+        Args:
+            texte: Texte recherché dans le titre ou le nom de l'auteur.
+            annee_publication: Année de publication optionnelle pour filtrer.
+
+        Returns:
+            Les livres correspondant au texte et à l'année.
+        """
 
 
 class DepotLecteur(Protocol):

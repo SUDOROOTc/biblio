@@ -83,16 +83,17 @@ class ServiceLivre:
         self._depot_livre.enregistrer(livre)
         return livre
 
-    def rechercher(self, texte: str) -> list[Livre]:
+    def rechercher(self, texte: str, annee_publication: int | None = None) -> list[Livre]:
         """Recherche les livres correspondant à un texte.
 
         Args:
             texte: Texte recherché dans le titre ou le nom de l'auteur.
+            annee_publication: Année de publication optionnelle pour filtrer.
 
         Returns:
             Les livres correspondant au texte.
         """
-        return self._depot_livre.rechercher(texte)
+        return self._depot_livre.rechercher(texte, annee_publication)
 
     def supprimer(self, livre_id: uuid.UUID) -> None:
         """Supprime logiquement un livre sans réservation active.
