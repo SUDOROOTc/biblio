@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "drf_spectacular_sidecar",
     "src.infrastructure",
+    "src.authentification",
 ]
 
 MIDDLEWARE = [
@@ -131,6 +132,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Django REST Framework settings
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }
 
 SPECTACULAR_SETTINGS = {
@@ -149,4 +157,5 @@ SPECTACULAR_SETTINGS = {
         "defaultModelExpandDepth": 1,
         "docExpansion": "list",
     },
+    "COMPONENT_SPLIT_REQUEST": True,
 }
