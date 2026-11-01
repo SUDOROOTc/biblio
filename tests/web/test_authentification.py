@@ -72,3 +72,33 @@ def test_logout_deconnecte_l_utilisateur():
 
     assert reponse.status_code == 204
     assert client.get("/api/auth/me").status_code == 401
+
+
+@pytest.mark.django_db
+def test_login_avec_mauvais_identifiants_retourne_401_json():
+    User.objects.create_user(username="bibliothecaire", password="bibliothecaire")
+    client = APIClient(enforce_csrf_checks=True)
+    csrf = client.get("/api/auth/csrf").cookies["csrftoken"].value
+
+    reponse = client.post(
+        "/api/auth/login",
+        {"username": "bibliothecaire", "password": "incorrect"},
+        format="json",
+        HTTP_X_CSRFTOKEN=csrf,
+    )
+
+    assert reponse.status_code == 401
+    assert reponse.json() == {"detail": "Identifiant ou mot de passe incorrect."}
+
+
+@pytest.mark.django_db
+def test_login_sans_csrf_est_refuse():
+    client = APIClient(enforce_csrf_checks=True)
+
+    reponse = client.post(
+        "/api/auth/login",
+        {"username": "bibliothecaire", "password": "bibliothecaire"},
+        format="json",
+    )
+
+    assert reponse.status_code == 403
