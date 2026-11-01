@@ -1,46 +1,129 @@
 # Biblio : gestion de bibliothèque
 
 API de gestion d'une bibliothèque de quartier : livres, lecteurs et réservations.
-Projet réalisé pour le kata de stage Développeur Full Stack (Kainaa).
 
-> Ce README est volontairement minimal : il décrit l'état réel du dépôt et sera complété au fil des cycles de développement. Les éléments marqués **À compléter** ne sont pas encore décidés ou réalisés.
+Projet réalisé dans le cadre du kata de stage Développeur Full Stack (Kainaa).
+
+## Objectif
+
+L'objectif n'est pas de tout faire, mais de montrer la façon de construire un logiciel : modélisation, tests, lisibilité et décisions assumées. Ce dépôt illustre une approche TDD avec une architecture en couches stricte.
 
 ## État d'avancement
 
-| Élément | État |
-|---|---|
-| Django, Django REST Framework et drf-spectacular configurés | fait |
-| Docker Compose (application + PostgreSQL 17) | fait |
-| Schéma OpenAPI (`/api/schema/`) et interface Swagger (`/api/docs/`) | fait, testé |
-| Couche domaine (entités, règles métier) | à venir |
-| Couche application (services, interfaces de dépôt, horloge) | à venir |
-| Couche infrastructure (modèles Django, dépôts, migrations) | à venir |
-| Endpoints livres, lecteurs, réservations | à venir |
-| Correction du bug de double réservation et test de concurrence | à venir |
+| Élément | État | Détails |
+| --- | --- | --- |
+| Django 5.2, DRF, drf-spectacular | Fait | API REST + documentation OpenAPI/Swagger |
+| Docker Compose (application + PostgreSQL) | Fait | Lancement identique sans installation locale |
+| Schéma OpenAPI (`/api/schema/`) et interface Swagger (`/api/docs/`) | Fait | Configuré, testé et fonctionnel |
+| Couche domaine (entités, règles métier, erreurs) | Fait | `Livre`, `Lecteur`, `Reservation`, `StatutReservation`, hiérarchie d'erreurs |
+| Couche application (services, interfaces de dépôt, horloge) | Fait | `ServiceLivre`, `ServiceLecteur`, `ServiceReservation`, `Horloge`/`HorlogeFictive`, dépôts mémoire |
+| Couche infrastructure (modèles Django, dépôts Django, migrations) | Fait | Modèles + dépôts Django, migration initiale, contrainte d'unicité partielle |
+| API REST (livres, lecteurs, réservations) | Fait | Endpoints avec traduction des erreurs domaine -> codes HTTP |
+| Test d'architecture | Fait | Vérifie la pureté de `domaine/` et `application/` |
+| Test de concurrence (bug réservation) | Fait | Prouve la correction sur vraie base PostgreSQL |
+| Expiration automatique des réservations (48h) | Partiel | `ServiceReservation.expirer_reservations()` implémenté, déclenchement non automatisé |
+| Authentification du bibliothécaire | Non fait | Hors périmètre minimal choisi |
 
 ## Choix de stack
 
-- **Python 3.12 et Django 5.2** : la stack que je maîtrise le mieux, avec un ORM et des migrations intégrés.
-- **Django REST Framework et drf-spectacular** : API REST et documentation OpenAPI générée à partir du code.
-- **PostgreSQL** : il supporte les index d'unicité partiels, dont dépend la garantie « une seule réservation active par livre » (voir la section sur le bug).
-- **Docker Compose** : lancement identique sur toutes les machines, sans installer Python ni PostgreSQL.
-- **pytest et pytest-django** : tests lisibles, qui décrivent le comportement métier.
+J'ai choisi **Python 3.12 et Django 5.2** car je les maîtrise le mieux. **Django REST Framework** permet de créer des API REST robustes et fiables, avec une sérialisation puissante et des contrôleurs bien structurés. **drf-spectacular** génère automatiquement la documentation OpenAPI et propose une interface de test interactive dans le navigateur pour tester directement les endpoints. **PostgreSQL** supporte les contraintes d'unicité partielles, indispensables pour garantir « une seule réservation active par livre ». **Docker Compose** assure un lancement identique sans installation locale, et **pytest**/**pytest-django** facilitent des tests lisibles décrivant le comportement métier.
+
+## Architecture
+
+Quatre couches avec dépendances vers l'intérieur :
+
+```text
+web → infrastructure → application → domaine
+```
+
+| Couche | Rôle | Connaît Django ? |
+| --- | --- | --- |
+| `src/domaine/` | Entités et règles métier pures (validations, transitions, suppression logique). | Non |
+| `src/application/` | Services (cas d'usage), interfaces de dépôt, interface `Horloge`. | Non |
+| `src/infrastructure/` | Modèles Django, dépôts Django, `HorlogeSysteme`, migrations. Seul à voir les modèles Django. | Oui |
+| `src/web/` | Vues DRF, sérialiseurs (validation de forme uniquement), traduction erreurs domaine -> HTTP, URLs. | Oui |
+
+Les services et dépôts échangent uniquement des **entités pures** du domaine. Les modèles Django ne contiennent aucune règle métier.
+
+## Description du bug et stratégie de correction
+
+### Problème dans le pseudo-code de l'énoncé
+
+Le pseudo-code proposait un schéma « vérifier puis agir » :
+
+```text
+si livre.disponible:  # lecture
+  creer_reservation(...)  # écriture
+  livre.disponible = faux
+  enregistrer(livre)
+sinon lever_erreur("Livre déjà réservé")
+```
+
+Trois défauts majeurs :
+1. **Condition de concurrence** : entre la vérification et l'écriture, une autre requête peut s'intercaler. Deux demandes simultanées peuvent créer deux réservations pour le même livre.
+2. **Donnée dupliquée** : le champ `disponible` duplique l'information déjà portée par les réservations actives et risque la désynchronisation.
+3. **Non-atomicité** : deux écritures distinctes ne forment pas une opération atomique.
+
+### Stratégie retenue
+
+- **Suppression du champ `disponible`** : la disponibilité d'un livre se déduit des réservations actives (`RESERVEE` ou `EMPRUNTEE`). Aucune donnée stockée redondante.
+- **Garantie par la base** : ajout d'une **contrainte d'unicité partielle** dans PostgreSQL sur `reservation(livre_id)` lorsque le statut est `RESERVEE` ou `EMPRUNTEE` (`unique_reservation_active_par_livre`).
+- **Vérification applicative conservée** : le `ServiceReservation` vérifie explicitement (`existe_active_pour_livre`, quota du lecteur) pour fournir des messages d'erreur clairs et explicites.
+- **Traduction de l'erreur** : le `DepotReservationDjango` intercepte l'`IntegrityError` levée par la contrainte et la traduit en `ErreurConflit("Livre déjà réservé.")`, cohérente avec le reste de la hiérarchie d'erreurs.
+- **Preuve par le test** : `tests/infrastructure/test_concurrence_reservation.py` lance **deux threads en parallèle** sur le **même livre** avec **deux lecteurs différents** sur une **vraie base PostgreSQL**. Résultat : **1 seul succès, 1 seul échec avec `ErreurConflit`**.
+
+## Règles métier implémentées
+
+- **Cycle de vie** : `RESERVEE → EMPRUNTEE → RETOURNEE`, avec `ANNULEE` ou `EXPIREE` comme issues. Toute transition invalide est refusée par l'entité (`ErreurTransitionInvalide`).
+- **RG1** : au plus **une réservation active par livre**. Garanti par la **contrainte d'unicité partielle en base** (renforcé par une vérification applicative).
+- **RG2** : au plus **3 réservations actives par lecteur**, vérifié par le service.
+- **Expiration** : une réservation `RESERVEE` non retirée sous **48 heures** expire (`ServiceReservation.expirer_reservations()`). L'horloge est injectée (`HorlogeSysteme` en production, `HorlogeFictive` en tests).
+- **Suppression logique** : `Livre` et `Lecteur` utilisent `date_suppression` au lieu d'une suppression physique. Un livre/lecteur avec une réservation active ne peut pas être supprimé logiquement.
+- **Unicité de l'email** : contrainte d'unicité partielle sur `LecteurModel.email` pour les lecteurs non supprimés.
+- **Horloge injectée** : toutes les règles dépendant du temps reçoivent l'heure en paramètre (dans les entités) ou passent par `Horloge`. Aucun `datetime.now()`/`timezone.now()` dans `domaine/` ou `application/` (garanti par le test d'architecture).
+
+## API REST
+
+Routes principales sous `/api/` :
+
+| Méthode | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/livres` | Créer un livre |
+| `PUT` | `/api/livres/<uuid>` | Modifier un livre |
+| `DELETE` | `/api/livres/<uuid>` | Supprimer logiquement un livre |
+| `GET` | `/api/livres/recherche?q=...` | Rechercher par titre/auteur |
+| `POST` | `/api/lecteurs` | Créer un lecteur |
+| `PUT` | `/api/lecteurs/<uuid>` | Modifier un lecteur |
+| `DELETE` | `/api/lecteurs/<uuid>` | Supprimer logiquement un lecteur |
+| `GET` | `/api/lecteurs/<uuid>/reservations` | Consulter un lecteur et ses réservations actives |
+| `GET` | `/api/reservations` | Lister les réservations |
+| `POST` | `/api/reservations` | Créer une réservation (`livre_id`, `lecteur_id`) |
+| `POST` | `/api/reservations/<uuid>/annuler` | Annuler une réservation (`RESERVEE` uniquement) |
+| `POST` | `/api/reservations/<uuid>/emprunter` | Enregistrer un emprunt (`RESERVEE` → `EMPRUNTEE`) |
+| `POST` | `/api/reservations/<uuid>/retourner` | Enregistrer un retour (`EMPRUNTEE` → `RETOURNEE`) |
+
+**Traduction des erreurs domaine → HTTP** (centralisée dans `src/web/exceptions.py`) :
+- `ErreurIntrouvable` → `404 Not Found`
+- `ErreurConflit` (RG1, RG2, suppression bloquée) → `409 Conflict`
+- `ErreurValidation`, `ErreurTransitionInvalide` → `422 Unprocessable Entity`
+
+Le code HTTP pour le dépassement de quota (RG2) a été choisi comme **409 Conflict** (conflit d'état/règle métier), cohérent avec les autres cas de conflit.
 
 ## Installation et lancement
 
 Prérequis : Docker et Docker Compose.
 
 ```powershell
-# 1. Créer le fichier d'environnement à partir du modèle, puis ajuster les valeurs
+# 1. Créer le fichier d'environnement
 Copy-Item .env.example .env
 
-# 2. Construire et démarrer l'application et la base
+# 2. Construire et démarrer
 docker compose up --build
 ```
 
-L'API écoute sur le port 8000 (voir « Liens » en fin de document).
-
-**À compléter** : commande de création des tables (migrations) et du compte bibliothécaire, quand ils existeront.
+L'API écoute sur le port 8000.
+- Schéma OpenAPI : [http://localhost:8000/api/schema/](http://localhost:8000/api/schema/)
+- Interface Swagger : [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
 
 ## Tests
 
@@ -48,60 +131,30 @@ L'API écoute sur le port 8000 (voir « Liens » en fin de document).
 docker compose run --rm web pytest
 ```
 
-Les tests sont rangés par couche dans `tests/` : `web/` existe aujourd'hui ; `domaine/`, `application/` et `infrastructure/` viendront avec chaque couche.
-
-## Architecture
-
-Quatre couches, avec des dépendances qui vont toujours vers le domaine :
-
-| Couche | Rôle | Connaît Django ? |
-|---|---|---|
-| `src/domaine/` (à venir) | entités et règles propres à chaque objet (validité, transitions d'état) | non |
-| `src/application/` (à venir) | services (cas d'utilisation, règles entre plusieurs objets), interfaces de dépôt, interface d'horloge | non |
-| `src/infrastructure/` (à venir) | modèles Django, dépôts Django, horloge réelle | oui |
-| `src/web/` | vues et sérialisation : valident la forme de la requête, appellent les services, traduisent les erreurs en codes HTTP | oui |
-
-Les règles métier ne sont donc ni dans la couche HTTP ni dans la base de données. Les dépôts sont la seule frontière entre les entités du domaine et les modèles Django.
+Tests rangés par couche : `tests/domaine/`, `tests/application/`, `tests/infrastructure/`, `tests/web/`, `tests/architecture/`. Le test d'architecture garantit la pureté des couches `domaine/` et `application/`. Le test de concurrence valide la correction du bug sur vraie base PostgreSQL.
 
 ## Décisions et compromis
 
-**Décisions prises**
+### Décisions prises
+- **"Disponible" déduit** : aucun booléen stocké, calculé à partir des réservations actives.
+- **Garantie atomique en base** : contrainte d'unicité partielle pour RG1, traduite en erreur métier explicite.
+- **"Vérifier puis écrire" durci** : conservé dans le service pour des messages clairs, mais rendu sûr par la contrainte PostgreSQL + test de concurrence.
+- **Horloge injectée** : `HorlogeSysteme` / `HorlogeFictive` pour rendre l'expiration testable sans attendre.
+- **Suppression logique** : conservation de l'historique via `dateSuppression`.
+- **Entités pures** : règles dans les entités quand elles ne dépassent pas leur périmètre, règles inter-objets (RG1/RG2) dans les services.
+- **Dépôts Django isolés** : seuls les dépôts infrastructure voient les modèles Django, conversion entité ↔ modèle systématique.
+- **API REST** : contrôleurs minces, traduction centralisée des erreurs domaine → HTTP.
+- **TDD** : test rouge → vert → refactor à chaque cycle significatif.
 
-- Une réservation est **active** quand elle est `RESERVEE` ou `EMPRUNTEE`. Un livre est **disponible** quand il n'a aucune réservation active : cette information est déduite, jamais stockée.
-- Cycle de vie : `RESERVEE` vers `EMPRUNTEE`, `ANNULEE` ou `EXPIREE` ; `EMPRUNTEE` vers `RETOURNEE`. Toute autre transition est refusée. `RETOURNEE`, `ANNULEE` et `EXPIREE` sont terminaux.
-- Un lecteur a au plus 3 réservations actives, vérifié à la création d'une réservation.
-- Un livre a au plus une réservation active, garanti par une contrainte d'unicité partielle en base.
-- Suppression d'un livre ou d'un lecteur : refusée s'il a une réservation active, sinon **suppression logique** (`dateSuppression`), pour conserver l'historique.
-- L'horloge est injectée via une interface, pour tester l'expiration à 48 h sans attendre.
-- Le lecteur n'utilise pas le système : le bibliothécaire saisit réservations, annulations, emprunts et retours.
-
-**Limites assumées**
-
-- Pas de gestion des exemplaires : un livre correspond à un seul exemplaire.
-- Pas d'état « perdu » : un livre emprunté et perdu reste emprunté, et ne peut donc pas être supprimé.
-- Un emprunt passe toujours par une réservation préalable.
-
-## Le bug de la réservation
-
-Le pseudo-code de l'énoncé a trois défauts de conception :
-
-1. **Vérifier puis agir** : entre la lecture de la disponibilité et la création de la réservation, une autre requête peut s'intercaler. Deux demandes simultanées peuvent donc créer deux réservations pour le même livre (condition de concurrence).
-2. **Un champ `disponible` dupliqué** : il répète une information déjà portée par les réservations, et peut se désynchroniser (par exemple après une expiration).
-3. **Deux écritures non atomiques** : si le programme s'arrête entre l'enregistrement de la réservation et celui du livre, l'état devient incohérent.
-
-**Stratégie retenue** : supprimer le champ `disponible` (la disponibilité se déduit des réservations) et confier la garantie à la base, avec un index d'unicité partiel sur le livre pour les réservations actives. La vérification préalable reste utile pour donner un message clair, mais elle ne garantit rien. L'erreur de la base est traduite en erreur métier explicite (« livre déjà réservé »).
-
-**À compléter** : implémentation et test de concurrence (deux demandes simultanées sur le même livre, sur une vraie base PostgreSQL).
-
-## À compléter avant le rendu
-
-- Expiration des réservations : tâche planifiée, ou vérification à chaque opération.
-- Code HTTP quand le quota est dépassé : 409 ou 422.
-- Unicité de l'e-mail d'un lecteur : index partiel PostgreSQL, ou vérification applicative.
-- Authentification du bibliothécaire : périmètre d'implémentation.
-- Liste finale de ce qui est fait, et de ce qui ne l'est pas, avec les raisons.
+### Limites assumées / non fait
+- **Authentification** : non implémentée. Le contexte indique que le bibliothécaire saisit les actions (non un lecteur se connectant). Signalé comme non fait.
+- **Tâche planifiée pour l'expiration** : `expirer_reservations()` existe et est testée, mais aucun cron/worker n'est configuré. L'expiration peut être appelée à l'opération ou via une tâche planifiée ultérieurement.
+- **Pagination / filtres avancés** : non implémentés (hors périmètre essentiel/important prioritaire).
+- **Historique des réservations passées** : non implémenté (bonus).
+- **Vue mobile / PWA** : non implémenté (bonus).
+- **CI** : non configuré.
 
 ## Liens
 
-- Schéma OpenAPI : http://localhost:8000/api/schema/
-- Interface Swagger : http://localhost:8000/api/docs/
+- Schéma OpenAPI : [http://localhost:8000/api/schema/](http://localhost:8000/api/schema/)
+- Interface Swagger : [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
