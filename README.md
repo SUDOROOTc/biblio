@@ -111,6 +111,8 @@ Le code HTTP pour le dépassement de quota (RG2) a été choisi comme **409 Conf
 
 ## Installation et lancement
 
+### Option 1 : Docker (recommandée)
+
 Prérequis : Docker et Docker Compose.
 
 ```powershell
@@ -119,6 +121,29 @@ Copy-Item .env.example .env
 
 # 2. Construire et démarrer
 docker compose up --build
+```
+
+### Option 2 : Environnement virtuel local (sans Docker)
+
+Prérequis : Python 3.12 installé.
+
+```powershell
+# 1. Créer et activer l'environnement virtuel
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# 2. Installer les dépendances
+pip install -r requirements.txt
+
+# 3. Configurer l'environnement (optionnel)
+Copy-Item .env.local.example .env
+# Sans .env, Django utilise SQLite automatiquement en local
+
+# 4. Appliquer les migrations
+python manage.py migrate
+
+# 5. Lancer le serveur
+python manage.py runserver
 ```
 
 L'API écoute sur le port 8000.
