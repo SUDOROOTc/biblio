@@ -1,0 +1,3 @@
+# Crontab pour l'expiration automatique des réservations (toutes les heures)
+# À installer avec : crontab cron.expiration_reservations
+0 * * * * /usr/bin/docker compose -f /chemin/vers/backend/docker-compose.yml run --rm -T web python manage.py expirer_reservations >> /var/log/biblio_expiration.log 2>&1
