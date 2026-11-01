@@ -4,7 +4,7 @@ Cette couche expose les opérations de session Django au frontend sans
 réintroduire les pages HTML de l'interface d'authentification DRF.
 """
 
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from drf_spectacular.utils import extend_schema
@@ -88,3 +88,22 @@ class UtilisateurConnecteView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         return Response({"utilisateur": _utilisateur_vers_dict(request.user)})
+
+
+class DeconnexionView(APIView):
+    """Ferme la session Django de l'utilisateur authentifié."""
+
+    @extend_schema(
+        description="Ferme la session Django courante.",
+        responses={204: None, 401: None},
+    )
+    @method_decorator(csrf_protect)
+    def post(self, request):
+        """Détruit la session et retourne une réponse sans contenu."""
+        if not request.user.is_authenticated:
+            return Response(
+                {"detail": "Authentification requise."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        logout(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)

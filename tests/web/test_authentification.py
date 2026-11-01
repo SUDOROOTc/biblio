@@ -60,3 +60,15 @@ def test_me_retourne_l_utilisateur_connecte():
 
     assert reponse.status_code == 200
     assert reponse.json()["utilisateur"]["username"] == "bibliothecaire"
+
+
+@pytest.mark.django_db
+def test_logout_deconnecte_l_utilisateur():
+    User.objects.create_user(username="bibliothecaire", password="bibliothecaire")
+    client = APIClient()
+    client.login(username="bibliothecaire", password="bibliothecaire")
+
+    reponse = client.post("/api/auth/logout")
+
+    assert reponse.status_code == 204
+    assert client.get("/api/auth/me").status_code == 401
