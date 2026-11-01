@@ -19,10 +19,10 @@ L'objectif n'est pas de tout faire, mais de montrer la façon de construire un l
 | Couche application (services, interfaces de dépôt, horloge) | Fait | `ServiceLivre`, `ServiceLecteur`, `ServiceReservation`, `Horloge`/`HorlogeFictive`, dépôts mémoire |
 | Couche infrastructure (modèles Django, dépôts Django, migrations) | Fait | Modèles + dépôts Django, migration initiale, contrainte d'unicité partielle |
 | API REST (livres, lecteurs, réservations) | Fait | Endpoints avec traduction des erreurs domaine -> codes HTTP |
+| Authentification du bibliothécaire | Fait | Django auth (Session/Basic), commande `creer_bibliothecaire`, accès admin |
 | Test d'architecture | Fait | Vérifie la pureté de `domaine/` et `application/` |
 | Test de concurrence (bug réservation) | Fait | Prouve la correction sur vraie base PostgreSQL |
 | Expiration automatique des réservations (48h) | Partiel | `ServiceReservation.expirer_reservations()` implémenté, déclenchement non automatisé |
-| Authentification du bibliothécaire | Non fait | Hors périmètre minimal choisi |
 
 ## Choix de stack
 
@@ -82,9 +82,23 @@ Trois défauts majeurs :
 - **Unicité de l'email** : contrainte d'unicité partielle sur `LecteurModel.email` pour les lecteurs non supprimés.
 - **Horloge injectée** : toutes les règles dépendant du temps reçoivent l'heure en paramètre (dans les entités) ou passent par `Horloge`. Aucun `datetime.now()`/`timezone.now()` dans `domaine/` ou `application/` (garanti par le test d'architecture).
 
-## API REST
+## Authentification
 
-Routes principales sous `/api/` :
+L'API est protégée par authentification Django (`SessionAuthentication` et `BasicAuthentication`).
+
+Pour créer le compte du bibliothécaire :
+
+```powershell
+# Avec Docker
+docker compose run --rm web python manage.py creer_bibliothecaire
+
+# En local
+python manage.py creer_bibliothecaire
+```
+
+Identifiants par défaut : `bibliothecaire` / `bibliothecaire`. Il est possible de les personnaliser avec `--username`, `--password`, `--email`.
+
+Le mot de passe peut être modifié depuis l'interface Django Admin (`/admin/`) ou via `python manage.py changepassword bibliothecaire`. Routes d'authentification DRF disponibles sous `/api/auth/`.
 
 | Méthode | Endpoint | Description |
 | --- | --- | --- |
@@ -172,7 +186,6 @@ Tests rangés par couche : `tests/domaine/`, `tests/application/`, `tests/infras
 - **TDD** : test rouge → vert → refactor à chaque cycle significatif.
 
 ### Limites assumées / non fait
-- **Authentification** : non implémentée. Le contexte indique que le bibliothécaire saisit les actions (non un lecteur se connectant). Signalé comme non fait.
 - **Tâche planifiée pour l'expiration** : `expirer_reservations()` existe et est testée, mais aucun cron/worker n'est configuré. L'expiration peut être appelée à l'opération ou via une tâche planifiée ultérieurement.
 - **Pagination / filtres avancés** : non implémentés (hors périmètre essentiel/important prioritaire).
 - **Historique des réservations passées** : non implémenté (bonus).
