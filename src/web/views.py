@@ -207,7 +207,7 @@ class ReservationListCreateView(APIView):
 
 
 class ReservationAnnulerView(APIView):
-    @extend_schema(responses={200: None})
+    @extend_schema(request=None, responses={200: None})
     def post(self, request, reservation_id):
         service = get_service_reservation()
         try:
@@ -218,7 +218,7 @@ class ReservationAnnulerView(APIView):
 
 
 class ReservationEmprunterView(APIView):
-    @extend_schema(responses={200: None})
+    @extend_schema(request=None, responses={200: None})
     def post(self, request, reservation_id):
         service = get_service_reservation()
         try:
