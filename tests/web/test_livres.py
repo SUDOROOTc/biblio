@@ -59,3 +59,29 @@ def test_rechercher_avec_filtre_annee_retourne_reponse_paginee():
     assert data["count"] == 1
     assert len(data["results"]) == 1
     assert data["results"][0]["titre"] == "Dune"
+
+
+@pytest.mark.django_db
+def test_lister_les_lecteurs_retourne_tous_les_lecteurs():
+    User.objects.create_user(username="bibliothecaire", password="bibliothecaire")
+    client = APIClient()
+    client.login(username="bibliothecaire", password="bibliothecaire")
+
+    client.post(
+        "/api/lecteurs",
+        {"nom": "Ada Lovelace", "email": "ada@example.com"},
+        format="json",
+    )
+    client.post(
+        "/api/lecteurs",
+        {"nom": "Grace Hopper", "email": "grace@example.com"},
+        format="json",
+    )
+
+    response = client.get("/api/lecteurs", format="json")
+
+    assert response.status_code == 200
+    assert [lecteur["nom"] for lecteur in response.json()] == [
+        "Ada Lovelace",
+        "Grace Hopper",
+    ]

@@ -127,6 +127,12 @@ class LivreRechercheView(APIView):
 
 
 class LecteurListCreateView(APIView):
+    @extend_schema(request=None, responses={200: None})
+    def get(self, request):
+        service = get_service_lecteur()
+        lecteurs = service.lister()
+        return Response([_lecteur_vers_dict(lecteur) for lecteur in lecteurs])
+
     @extend_schema(request=LecteurCreationSerializer, responses={201: None})
     def post(self, request):
         serializer = LecteurCreationSerializer(data=request.data)

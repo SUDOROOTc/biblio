@@ -120,6 +120,25 @@ Réponse `200` :
 
 ## Lecteurs
 
+### Lister tous les lecteurs
+
+```http
+GET /api/lecteurs
+```
+
+Réponse `200` :
+
+```json
+[
+  {
+    "id": "uuid",
+    "nom": "Ada Lovelace",
+    "email": "ada.lovelace@example.com",
+    "date_suppression": null
+  }
+]
+```
+
 ### Créer un lecteur
 
 ```http

@@ -54,6 +54,10 @@ class ServiceLecteur:
         self._depot_lecteur.enregistrer(lecteur)
         return lecteur
 
+    def lister(self) -> list[Lecteur]:
+        """Retourne les lecteurs connus par le dépôt."""
+        return self._depot_lecteur.lister()
+
     def modifier(self, lecteur_id: uuid.UUID, nom: str, email: str) -> Lecteur:
         """Modifie puis enregistre un lecteur existant.
 
