@@ -63,3 +63,10 @@ class ChangerMotDePasseSerializer(serializers.Serializer):
         user = self.context["request"].user
         validate_password(value, user)
         return value
+
+
+class ConnexionSerializer(serializers.Serializer):
+    """Sérialiseur des identifiants de connexion JSON."""
+
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
