@@ -196,6 +196,11 @@ DJANGO_ALLOWED_HOSTS=biblio-api-3fjk.onrender.com
 DJANGO_CSRF_TRUSTED_ORIGINS=https://biblio-api-3fjk.onrender.com
 ```
 
+Render fournit automatiquement `RENDER_EXTERNAL_HOSTNAME`. Django l'ajoute
+également aux hôtes autorisés, mais `DJANGO_ALLOWED_HOSTS` doit rester configuré
+explicitement dans le service Render. Après toute modification de ces variables,
+redéployer le service pour qu'elles soient prises en compte.
+
 Tests rangés par couche : `tests/domaine/`, `tests/application/`, `tests/infrastructure/`, `tests/web/`, `tests/architecture/`. Le test d'architecture garantit la pureté des couches `domaine/` et `application/`. Le test de concurrence valide la correction du bug sur vraie base PostgreSQL.
 
 ## Décisions et compromis

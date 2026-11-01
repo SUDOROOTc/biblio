@@ -16,7 +16,15 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-key-change-me")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
+allowed_hosts = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
+    if host.strip()
+]
+render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if render_hostname and "*" not in allowed_hosts and render_hostname not in allowed_hosts:
+    allowed_hosts.append(render_hostname)
+ALLOWED_HOSTS = allowed_hosts or ["*"]
 CSRF_TRUSTED_ORIGINS = [
     origine.strip()
     for origine in os.environ.get(
