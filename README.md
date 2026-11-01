@@ -115,6 +115,7 @@ Le mot de passe peut être modifié depuis l'interface Django Admin (`/admin/`) 
 | `POST` | `/api/reservations/<uuid>/annuler` | Annuler une réservation (`RESERVEE` uniquement) |
 | `POST` | `/api/reservations/<uuid>/emprunter` | Enregistrer un emprunt (`RESERVEE` → `EMPRUNTEE`) |
 | `POST` | `/api/reservations/<uuid>/retourner` | Enregistrer un retour (`EMPRUNTEE` → `RETOURNEE`) |
+| `POST` | `/api/auth/changer-mot-de-passe` | Changer le mot de passe du bibliothécaire connecté |
 
 **Traduction des erreurs domaine → HTTP** (centralisée dans `src/web/exceptions.py`) :
 - `ErreurIntrouvable` → `404 Not Found`
